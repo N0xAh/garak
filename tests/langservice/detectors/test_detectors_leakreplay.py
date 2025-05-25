@@ -8,18 +8,18 @@ from garak.detectors.leakreplay import StartsWith
 
 
 def reverse_translate(attempt) -> Attempt:
-    from garak.langservice import _load_translator
+    from garak.langservice import _load_langprovider
 
     translator_config = {
         "language": "ja,en",
         "model_type": "local",
     }
-    reverse_translator = _load_translator(translator_config)
+    reverse_translator = _load_langprovider(translator_config)
     for i, thread in enumerate(attempt.messages):
         for j, turn in enumerate(thread):
             if turn["role"] == "assistant":
                 attempt.messages[i][j]["content"] = "\n".join(
-                    reverse_translator.translate(turn["content"].split("\n"))
+                    reverse_translator.get_text(turn["content"].split("\n"))
                 )
     return attempt
 

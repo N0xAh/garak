@@ -19,6 +19,7 @@ For a detailed oversight into how a probe operates, see :ref:`garak.probes.base.
    garak.probes.divergence
    garak.probes.donotanswer
    garak.probes.encoding
+   garak.probes.exploitation
    garak.probes.fileformats
    garak.probes.glitch
    garak.probes.goodside
@@ -39,3 +40,5 @@ For a detailed oversight into how a probe operates, see :ref:`garak.probes.base.
    garak.probes.topic
    garak.probes.xss
    garak.probes.visual_jailbreak
+   garak.probes._tier
+   

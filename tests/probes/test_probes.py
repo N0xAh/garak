@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+import langcodes
 import pytest
 import re
 
 from garak import _config, _plugins
-from garak.probes.base import Probe
-
+import garak.probes
 PROBES = [classname for (classname, active) in _plugins.enumerate_plugins("probes")]
 
 DETECTORS = [
@@ -18,7 +18,6 @@ DETECTORS = [
 ]
 DETECTOR_BARE_NAMES = [".".join(d.split(".")[1:]) for d in DETECTORS]
 
-BCP_LENIENT_RE = re.compile(r"[a-z]{2}([\-A-Za-z]*)")
 
 with open(
     _config.transient.package_dir / "data" / "misp_descriptions.tsv",
@@ -75,14 +74,7 @@ def test_probe_metadata(classname):
     p = _plugins.load_plugin(classname)
     assert isinstance(p.goal, str), "probe goals should be a text string"
     assert len(p.goal) > 0, "probes must state their general goal"
-    assert isinstance(
-        p.bcp47, str
-    ), "language codes should be described in a comma-separated string of bcp47 tags or *"
-    bcp47_parts = p.bcp47.split(",")
-    for bcp47_part in bcp47_parts:
-        assert bcp47_part == "*" or re.match(
-            BCP_LENIENT_RE, bcp47_part
-        ), "langs must be described with either * or a bcp47 code"
+    assert p.lang is not None and (p.lang == "*" or langcodes.tag_is_valid(p.lang)), "lang must be either * or a BCP47 code"
     assert isinstance(
         p.doc_uri, str
     ), "probes should give a doc uri describing/citing the attack"
@@ -94,7 +86,7 @@ def test_probe_metadata(classname):
     assert "in" in p.modality, "probe modalities need an in descriptor"
     assert isinstance(p.modality["in"], set), "modality descriptors must be sets"
     assert p.tier is not None, "probe tier must be specified"
-    assert p.tier in (Probe.TIER_1, Probe.TIER_2, Probe.TIER_3, Probe.TIER_U), "probe tier must be one of Probe.TIER_1 Probe.TIER_2 Probe.TIER_3 Probe.TIER_U'"
+    assert isinstance(p.tier, garak.probes.Tier), "probe tier must be one of type Tier'"
 
 
 @pytest.mark.parametrize("plugin_name", PROBES)

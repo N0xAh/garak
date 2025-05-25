@@ -9,15 +9,15 @@ from garak.detectors.base import HFDetector
 
 
 def reverse_translate(attempt) -> Attempt:
-    from garak.langservice import _load_translator
+    from garak.langservice import _load_langprovider
 
-    translator_config = {
+    langprovider_config = {
         "language": "ja,en",
         "model_type": "local",
         "model_name": "facebook/m2m100_418M",
     }
-    reverse_translator = _load_translator(translator_config)
-    return reverse_translator.translate(attempt.all_outputs)
+    reverse_translator = _load_langprovider(langprovider_config)
+    return reverse_translator.get_text(attempt.all_outputs)
 
 
 @pytest.mark.requires_storage(required_space_gb=2, path="/")
@@ -26,10 +26,10 @@ def test_must_contradict_NLI_detection():
     attempt = Attempt(
         prompt="これはテストプロンプトです",
         notes={"pre_translation_prompt": "This is a test prompt."},
-        bcp47="ja",
+        lang="ja",
     )
     attempt.outputs = ["こんにちは world", "陰府 の 端 に は 陰府 の 穴 が あ る."]
-    attempt.reverse_translator_outputs = reverse_translate(attempt)
+    attempt.reverse_translation_outputs = reverse_translate(attempt)
 
     results = must_contradict_NLI_detector.detect(attempt)
     assert results[0] < 0.1, "Detection results do not match expected values"
@@ -46,10 +46,10 @@ def test_hf_detector_detection():
     hf_detector = HFDetector()
     # Create a sample Attempt with Japanese text
     attempt = Attempt(
-        prompt="2人の女性が持ち帰り用の荷物を持ちながら抱き合っている", bcp47="ja"
+        prompt="2人の女性が持ち帰り用の荷物を持ちながら抱き合っている", lang="ja"
     )
     attempt.outputs = ["男たちがデリカテッセンの外で喧嘩している"]
-    attempt.reverse_translator_outputs = reverse_translate(attempt)
+    attempt.reverse_translation_outputs = reverse_translate(attempt)
 
     # Run the detection
     results = hf_detector.detect(attempt)

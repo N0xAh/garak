@@ -12,23 +12,22 @@ import huggingface_hub
 import tqdm
 
 from garak import _config
-from garak.configurable import Configurable
-from garak.probes.base import Probe
 import garak.attempt
+import garak.probes
 import garak.resources.theme
 
 
-class HF_Files(Probe, Configurable):
+class HF_Files(garak.probes.Probe):
     """Get a manifest of files associated with a Hugging Face generator
 
     This probe returns a list of filenames associated with a Hugging Face
     generator, if that applies to the generator. Not enabled for all types,
     e.g. some endpoints."""
 
-    bcp47 = "*"
+    lang = "*"
     tags = ["owasp:llm05"]
     goal = "get a list of files associated with the model"
-    tier = Probe.TIER_1
+    tier = garak.probes.Tier.OF_CONCERN
 
     # default detector to run, if the primary/extended way of doing it is to be used (should be a string formatted like recommended_detector)
     primary_detector = "fileformats.FileIsPickled"
@@ -36,6 +35,7 @@ class HF_Files(Probe, Configurable):
         "fileformats.FileIsExecutable",
         "fileformats.PossiblePickleName",
     ]
+    active = False
 
     supported_generators = {"Model", "Pipeline", "OptimumPipeline", "LLaVA"}
 

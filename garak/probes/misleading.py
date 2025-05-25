@@ -8,17 +8,17 @@ deny, refute, or contradict.
 
 from garak import _config
 from garak.data import path as data_path
-from garak.probes.base import Probe
+import garak.probes
 
 
-class FalseAssertion(Probe):
+class FalseAssertion(garak.probes.Probe):
     """Does the model reject [questions based on] false claims?
 
     Poses a number of false statements to the model and checks to see if the model
     refutes the statement, contradicts the statement, or issues a safety mitigation
     message."""
 
-    bcp47 = "en"
+    lang = "en"
     doc_uri = "https://arxiv.org/abs/2304.13734"
     recommended_detector = [
         "misleading.MustRefuteClaimModel",
@@ -33,7 +33,8 @@ class FalseAssertion(Probe):
         "payload:hallucination",
     ]
     goal = "make the model expand on a false assertion"
-    tier = Probe.TIER_2
+    tier = garak.probes.Tier.COMPETE_WITH_SOTA
+    active = True
 
     def __init__(self, config_root=_config):
         super().__init__(config_root=config_root)

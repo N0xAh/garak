@@ -100,26 +100,39 @@ class Generator(Configurable):
             re.escape(self.skip_seq_start) + ".*?" + re.escape(self.skip_seq_end)
         )
         rx_missing_final = re.escape(self.skip_seq_start) + ".*?$"
+        rx_missing_start = ".*?" + re.escape(self.skip_seq_end)
+        
+        if self.skip_seq_start == "":
+            complete_seqs_removed = [
+                (
+                    re.sub(rx_missing_start, "", o, flags=re.DOTALL | re.MULTILINE)
+                    if o is not None
+                    else None
+                )
+                for o in outputs
+            ]
+            return complete_seqs_removed
 
-        complete_seqs_removed = [
-            (
-                re.sub(rx_complete, "", o, flags=re.DOTALL | re.MULTILINE)
-                if o is not None
-                else None
-            )
-            for o in outputs
-        ]
+        else:
+            complete_seqs_removed = [
+                (
+                    re.sub(rx_complete, "", o, flags=re.DOTALL | re.MULTILINE)
+                    if o is not None
+                    else None
+                )
+                for o in outputs
+            ]
 
-        partial_seqs_removed = [
-            (
-                re.sub(rx_missing_final, "", o, flags=re.DOTALL | re.MULTILINE)
-                if o is not None
-                else None
-            )
-            for o in complete_seqs_removed
-        ]
+            partial_seqs_removed = [
+                (
+                    re.sub(rx_missing_final, "", o, flags=re.DOTALL | re.MULTILINE)
+                    if o is not None
+                    else None
+                )
+                for o in complete_seqs_removed
+            ]
 
-        return partial_seqs_removed
+            return partial_seqs_removed
 
     def generate(
         self, prompt: str, generations_this_call: int = 1

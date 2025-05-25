@@ -8,12 +8,12 @@
 import logging
 
 from garak.exception import BadGeneratorException
-from garak.translators.base import Translator
+from garak.langproviders.base import LangProvider
 
 VALIDATION_STRING = "A"  # just send a single ASCII character for a sanity check
 
 
-class RivaTranslator(Translator):
+class RivaTranslator(LangProvider):
     """Remote translation using NVIDIA Riva translation API
 
     https://developer.nvidia.com/riva
@@ -28,7 +28,7 @@ class RivaTranslator(Translator):
 
     # fmt: off
     # Reference: https://docs.nvidia.com/nim/riva/nmt/latest/support-matrix.html#models
-    bcp47_support = [
+    lang_support = [
         "zh", "ru", "de", "es", "fr",
         "da", "el", "fi", "hu", "it",
         "lt", "lv", "nl", "no", "pl",
@@ -39,7 +39,7 @@ class RivaTranslator(Translator):
     ]
     # fmt: on
     # Applied when a service only supports regions specific codes
-    bcp47_overrides = {
+    lang_overrides = {
         "es": "es-US",
         "zh": "zh-TW",
         "pr": "pt-PT",
@@ -47,27 +47,27 @@ class RivaTranslator(Translator):
 
     # avoid attempt to pickle the client attribute
     def __getstate__(self) -> object:
-        self._clear_translator()
+        self._clear_langprovider()
         return dict(self.__dict__)
 
     # restore the client attribute
     def __setstate__(self, d) -> object:
         self.__dict__.update(d)
-        self._load_translator()
+        self._load_langprovider()
 
-    def _clear_translator(self):
+    def _clear_langprovider(self):
         self.client = None
 
-    def _load_translator(self):
+    def _load_langprovider(self):
         if not (
-            self.source_lang in self.bcp47_support
-            and self.target_lang in self.bcp47_support
+            self.source_lang in self.lang_support
+            and self.target_lang in self.lang_support
         ):
             raise BadGeneratorException(
                 f"Language pair {self.language} is not supported for {self.__class__.__name__} services at {self.uri}."
             )
-        self._source_lang = self.bcp47_overrides.get(self.source_lang, self.source_lang)
-        self._target_lang = self.bcp47_overrides.get(self.target_lang, self.target_lang)
+        self._source_lang = self.lang_overrides.get(self.source_lang, self.source_lang)
+        self._target_lang = self.lang_overrides.get(self.target_lang, self.target_lang)
 
         import riva.client
 
@@ -91,7 +91,7 @@ class RivaTranslator(Translator):
     def _translate(self, text: str) -> str:
         try:
             if self.client is None:
-                self._load_translator()
+                self._load_langprovider()
             response = self.client.translate(
                 [text], "", self._source_lang, self._target_lang
             )
@@ -101,7 +101,7 @@ class RivaTranslator(Translator):
             return text
 
 
-class DeeplTranslator(Translator):
+class DeeplTranslator(LangProvider):
     """Remote translation using DeepL translation API
 
     https://www.deepl.com/en/translator
@@ -112,7 +112,7 @@ class DeeplTranslator(Translator):
 
     # fmt: off
     # Reference: https://developers.deepl.com/docs/resources/supported-languages
-    bcp47_support = [
+    lang_support = [
         "ar", "bg", "cs", "da", "de",  
         "en", "el", "es", "et", "fi",
         "fr", "hu", "id", "it", "ja",
@@ -123,22 +123,22 @@ class DeeplTranslator(Translator):
     ]
     # fmt: on
     # Applied when a service only supports regions specific codes
-    bcp47_overrides = {
+    lang_overrides = {
         "en": "en-US",
     }
 
-    def _load_translator(self):
+    def _load_langprovider(self):
         from deepl import Translator
 
         if not (
-            self.source_lang in self.bcp47_support
-            and self.target_lang in self.bcp47_support
+            self.source_lang in self.lang_support
+            and self.target_lang in self.lang_support
         ):
             raise BadGeneratorException(
                 f"Language pair {self.language} is not supported for {self.__class__.__name__} services."
             )
         self._source_lang = self.source_lang
-        self._target_lang = self.bcp47_overrides.get(self.target_lang, self.target_lang)
+        self._target_lang = self.lang_overrides.get(self.target_lang, self.target_lang)
 
         self.client = Translator(self.api_key)
         if not hasattr(self, "_tested"):

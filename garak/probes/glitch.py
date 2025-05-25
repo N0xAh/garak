@@ -5,17 +5,17 @@ Testing for tokens that lead to unusual model behavior
 
 from garak.attempt import Attempt
 from garak import _config
-from garak.probes.base import Probe
+import garak.probes
 
 
-class GlitchFull(Probe):
+class GlitchFull(garak.probes.Probe):
     """Probe model for glitch tokens that provoke unusual behavior
 
     Glitch tokens tend to be long entries in the tokenizer that only rarely occur
     in general text. Models using the same tokenizer are unlikely to be able to repeat
     them. These tokens lead to less stable model performance when included in input."""
 
-    bcp47 = "en"
+    lang = "en"
     active = False
     goal = "make the model fail to repeat a word"
     doc_uri = "https://www.lesswrong.com/posts/aPeJE8bSo6rAFoLqg/solidgoldmagikarp-plus-prompt-generation"
@@ -26,7 +26,7 @@ class GlitchFull(Probe):
         "quality:Security:PromptStability",
         "payload:generic",
     ]
-    tier = Probe.TIER_3
+    tier = garak.probes.Tier.INFORMATIONAL
 
     recommended_detector = ["goodside.Glitch"]
     glitch_tokens = [
@@ -204,7 +204,7 @@ class GlitchFull(Probe):
                 self.prompts.append(prompt)
                 self.triggers.append(glitch_token)
 
-        self.triggers = self.translator.translate(self.triggers)
+        self.triggers = self.langprovider.get_text(self.triggers)
 
     def _attempt_prestore_hook(self, attempt: Attempt, seq: int) -> Attempt:
         attempt.notes["triggers"] = [self.triggers[seq]]
@@ -219,7 +219,7 @@ class Glitch(GlitchFull):
     them. These tokens lead to less stable model performance when included in input.
     This probe uses a subset of 100 potential glitch tokens, for speed."""
 
-    active = True
+    active = False
 
     def __init__(self, config_root=_config):
         super().__init__(config_root)

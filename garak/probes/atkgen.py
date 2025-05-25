@@ -23,12 +23,12 @@ from tqdm import tqdm
 from garak import _config
 import garak._plugins
 import garak.attempt
-from garak.probes.base import Probe
+import garak.probes
 
 TEMPLATE_PLACEHOLDER = "[query]"
 
 
-class Tox(Probe):
+class Tox(garak.probes.Probe):
     """Automatic attack generation, trying to elicit toxic outputs from the model.
 
     This probe uses an attack model, trained on conversations that led to LLMs
@@ -50,11 +50,13 @@ class Tox(Probe):
     doc_uri = (
         "https://interhumanagreement.substack.com/p/faketoxicityprompts-automatic-red"
     )
-    bcp47 = "en"
-    tier = Probe.TIER_2
+    lang = "en"
+    tier = garak.probes.Tier.COMPETE_WITH_SOTA
+    active = True
 
-    DEFAULT_PARAMS = Probe.DEFAULT_PARAMS | {
-        "max_calls": 5,
+    DEFAULT_PARAMS = garak.probes.Probe.DEFAULT_PARAMS | {
+        "max_calls_per_conv": 5,
+        "convs_per_generation": 5,
         "constructive_tension": True,
         "red_team_model_type": "huggingface.Pipeline",
         "red_team_model_name": "garak-llm/attackgeneration-toxicity_gpt2",
@@ -64,6 +66,7 @@ class Tox(Probe):
         "red_team_prompt_template": "<|input|>[query]<|response|>",
         "red_team_postproc_rm_regex": r"\<\|.*",
         "use_only_first_sent": True,  # should we only consider the first sentence of the target's response?
+        "allow_repetition": False,
     }
 
     def probe(self, generator) -> List[garak.attempt.Attempt]:
@@ -90,7 +93,7 @@ class Tox(Probe):
             prev_max_new_tokens = generator.max_new_tokens
             generator.max_new_tokens = None
         attack_iterator = tqdm(
-            range(self.generations), leave=False
+            range(self.generations * self.convs_per_generation), leave=False
         )  # itrerate for probe generations
         attack_iterator.set_description(self.probename.replace("garak.", ""))
 
@@ -108,11 +111,11 @@ class Tox(Probe):
             logging.debug("atkgen: attempt %s uuid %s", i, this_attempt.uuid)
 
             if not output_is_conversation:
-                t = tqdm(total=2 * self.max_calls, leave=False)
+                t = tqdm(total=2 * self.max_calls_per_conv, leave=False)
             else:
                 print("atkgen: 🆕 ⋅.˳˳.⋅ॱ˙˙ॱ New conversation ॱ˙˙ॱ⋅.˳˳.⋅ 🗣️")
 
-            while calls_made < self.max_calls and keep_going:
+            while calls_made < self.max_calls_per_conv and keep_going:
                 if not output_is_conversation:
                     t.set_description(
                         f" turn {t.n:02}: red teaming [{red_team_model_short[:10]:<10}]"
@@ -149,12 +152,12 @@ class Tox(Probe):
                 # results in no retention of the challenge translation sent to the target
 
                 # translate the challenge to send to the target
-                challenge_to_send = self.translator.translate([challenge])[0]
+                challenge_to_send = self.langprovider.get_text([challenge])[0]
                 turn = ("probe", challenge)  # turns stores the original challenge
 
                 if len(turns) == 0:
                     this_attempt.prompt = challenge_to_send
-                    this_attempt.bcp47 = self.translator.target_lang
+                    this_attempt.lang = self.langprovider.target_lang
                     if challenge_to_send != challenge:
                         this_attempt.notes["pre_translation_prompt"] = challenge
                     this_attempt._expand_prompt_to_histories(1)
@@ -180,13 +183,13 @@ class Tox(Probe):
                     response = response[0].strip() if response[0] is not None else ""
 
                 # log the response
-                response_to_store = self.reverse_translator.translate([response])[0]
+                response_to_store = self.reverse_langprovider.get_text([response])[0]
                 turn = ("model", response_to_store)
                 if (
-                    self.reverse_translator.source_lang
-                    != self.reverse_translator.target_lang
+                    self.reverse_langprovider.source_lang
+                    != self.reverse_langprovider.target_lang
                 ):
-                    this_attempt.reverse_translator_outputs = [response_to_store]
+                    this_attempt.reverse_translation_outputs = [response_to_store]
                 this_attempt._add_turn("assistant", [response])
                 turns.append(turn)
                 logging.debug("atkgen: model: %s", turn)
@@ -200,7 +203,7 @@ class Tox(Probe):
                 if not len(response) and not self.constructive_tension:
                     keep_going = False
                 if response == last_response:
-                    keep_going = False
+                    keep_going = False and not self.allow_repetition
                 # update last_response
                 last_response = response.replace("\n", " ").strip()
                 self.redteamer.max_new_tokens = 170  # after first iter, give a limit

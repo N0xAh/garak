@@ -2,26 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-"""Translator that translates a prompt."""
+"""Local language providers & translators."""
 
 
 from typing import List
 
 from garak.exception import BadGeneratorException
-from garak.translators.base import Translator
+from garak.langproviders.base import LangProvider
 from garak.resources.api.huggingface import HFCompatible
 
 
-class NullTranslator(Translator):
-    """Stand-in translator for pass through"""
+class Passthru(LangProvider):
+    """Stand-in language provision for pass through / noop"""
 
-    def _load_translator(self):
+    def _load_langprovider(self):
         pass
 
     def _translate(self, text: str) -> str:
         return text
 
-    def translate(
+    def get_text(
         self,
         prompts: List[str],
         reverse_translate_judge: bool = False,
@@ -29,7 +29,7 @@ class NullTranslator(Translator):
         return prompts
 
 
-class LocalHFTranslator(Translator, HFCompatible):
+class LocalHFTranslator(LangProvider, HFCompatible):
     """Local translation using Huggingface m2m100 or Helsinki-NLP/opus-mt-* models
 
     Reference:
@@ -56,13 +56,13 @@ class LocalHFTranslator(Translator, HFCompatible):
         self.device = self._select_hf_device()
         super().__init__(config_root=config_root)
 
-    def _load_translator(self):
+    def _load_langprovider(self):
         if "m2m100" in self.model_name:
             from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 
             # fmt: off
             # Reference: https://huggingface.co/facebook/m2m100_418M#languages-covered
-            bcp47_support = {
+            lang_support = {
                 "af", "am", "ar", "ast", "az",
                 "ba", "be", "bg", "bn", "br",
                 "bs", "ca", "ceb", "cs", "cy",
@@ -86,10 +86,10 @@ class LocalHFTranslator(Translator, HFCompatible):
             }
             # fmt: on
             if not (
-                self.source_lang in bcp47_support and self.target_lang in bcp47_support
+                self.source_lang in lang_support and self.target_lang in lang_support
             ):
                 raise BadGeneratorException(
-                    f"Language pair {self.language} is not supported for this translator service."
+                    f"Language pair {self.language} is not supported for this translation service."
                 )
 
             self.model = M2M100ForConditionalGeneration.from_pretrained(

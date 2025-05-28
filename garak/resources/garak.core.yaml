@@ -42,4 +42,4 @@ reporting:
   report_dir: garak_runs
   show_100_pass_modules: true
   show_top_group_score: true
-  group_aggregation_function: mean
+  group_aggregation_function: lower_quartile

@@ -180,14 +180,20 @@ def compile_digest(
             case "median":
                 group_score = statistics.median(probe_scores)
             case "lower_quartile":
-                group_score = statistics.quantiles(probe_scores, method="inclusive")[0]
+                if len(probe_scores) == 1:
+                    group_score = probe_scores[0]
+                else:
+                    group_score = statistics.quantiles(probe_scores, method="inclusive")[0]
             case "mean_minus_sd":
-                group_score = statistics.mean(probe_scores) - statistics.stdev(
-                    probe_scores
-                )
+                if len(probe_scores) == 1:
+                    group_score = probe_scores[0]
+                else:
+                    group_score = statistics.mean(probe_scores) - statistics.stdev(
+                        probe_scores
+                    )
             case "proportion_passing":
                 group_score = 100.0 * (
-                    len([p for p in probe_scores if p > 40]) / len(probe_scores)
+                    len([p for p in probe_scores if p > garak.analyze.ABSOLUTE_DEFCON_BOUNDS.BELOW_AVG * 100]) / len(probe_scores)
                 )
             case _:
                 group_score = min(probe_scores)  # minimum as default

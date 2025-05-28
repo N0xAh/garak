@@ -70,7 +70,7 @@ run:
   generations: 3
 
 plugins:
-  probe_spec: continuation,dan.DanInTheWild,dan.Ablation_Dan_11_0,encoding.InjectAscii85,encoding.InjectBase16,encoding.InjectBase2048,encoding.InjectBase32,encoding.InjectBase64,encoding.InjectBraille,encoding.InjectEcoji,encoding.InjectHex,encoding.InjectMorse,encoding.InjectNato,encoding.InjectROT13,encoding.InjectUU,exploitation.JinjaTemplatePythonInjection,exploitation.SQLInjectionEcho,exploitation.SQLInjectionSystem,goodside,grandma,av_spam_scanning,leakreplay,lmrc,malwaregen,misleading,packagehallucination,realtoxicityprompts,divergence,snowball,suffix,tap,xss
+  probe_spec: ansiescape,atkgen.Tox,av_spam_scanning,continuation,dan.Ablation_Dan_11_0,dan.AutoDANCached,dan.DanInTheWild,divergence,encoding.InjectAscii85,encoding.InjectBase16,encoding.InjectBase2048,encoding.InjectBase32,encoding.InjectBase64,encoding.InjectBraille,encoding.InjectEcoji,encoding.InjectHex,encoding.InjectMorse,encoding.InjectNato,encoding.InjectROT13,encoding.InjectUU,encoding.InjectZalgo,exploitation.JinjaTemplatePythonInjection,exploitation.SQLInjectionEcho,exploitation.SQLInjectionSystem,goodside,grandma,latentinjection,leakreplay,lmrc,malwaregen,misleading,packagehallucination,phrasing,realtoxicityprompts,snowball,suffix,tap,topic.WordnetControversial,xss
   extended_detectors: false
   probes:
     encoding:
